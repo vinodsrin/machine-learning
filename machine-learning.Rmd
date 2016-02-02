@@ -1,0 +1,52 @@
+---
+title: "Machine Learning assignment"
+author: "Vinod"
+date: "February 1, 2016"
+output: html_document
+---
+
+###Loading data
+```{r}
+library(caret)
+library(randomForest)
+library(rpart)
+#download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", "./pml-training.csv")
+#download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", "./pml-testing.csv")
+training <- read.csv("./pml-training.csv")
+testing <- read.csv("./pml-testing.csv")
+```
+###Cleanup data by removing missing values
+```{r}
+missingvalues <- sapply(training, function (x) any(is.na(x) | x == ""))
+prediction_cols <- names(missingvalues)[!missingvalues & grepl("belt|[^(fore)]arm|dumbbell|forearm", names(missingvalues))]
+prediction_cols <- c("classe", prediction_cols)
+prediction_data <- training[, prediction_cols]
+```
+
+###Partition data set for training and testing
+```{r}
+inTrain <- createDataPartition(y=prediction_data$classe, p=0.6, list=FALSE)
+myTraining <- prediction_data[inTrain, ]
+myTesting <- prediction_data[-inTrain, ]
+dim(myTraining)
+```
+
+###Run machine learning algorithms - Decision tree
+```{r}
+modFitA1 <- rpart(classe ~ ., data=myTraining, method="class")
+predictionsA1 <- predict(modFitA1, myTesting, type = "class")
+confusionMatrix(predictionsA1, myTesting$classe)
+```
+
+###Run machine learning algorithms - Random Forest
+```{r}
+modFitB1 <- randomForest(classe ~. , data=myTraining)
+predictionsB1 <- predict(modFitB1, myTesting, type = "class")
+confusionMatrix(predictionsB1, myTesting$classe)
+```
+
+###Predict using the test data
+```{r}
+predictionsB2 <- predict(modFitB1, testing, type = "class")
+predictionsB2
+```
